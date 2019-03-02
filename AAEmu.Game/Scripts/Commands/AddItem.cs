@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using AAEmu.Game.Core.Managers;
 using AAEmu.Game.Core.Managers.Id;
 using AAEmu.Game.Core.Packets.G2C;
@@ -8,39 +8,62 @@ using AAEmu.Game.Models.Game.Items.Actions;
 
 namespace AAEmu.Game.Scripts.Commands
 {
-    public class AddItem : ICommand
+    public class AddItem : BaseCommand
     {
-        public void OnLoad()
-        {
-            CommandManager.Instance.Register("add_item", this);
-        }
+        public override string Command => "add_item";
 
-        public void Execute(Character character, string[] args)
+        public override string Description => "Adds an item to your inventory";
+
+        public override string Syntax => "/add_item <itemId> <count?> <grade?>";
+
+        public override void Execute(Character character, string[] args)
         {
-            if (args.Length == 0)
+            if (args.Length == 1)
             {
-                character.SendMessage("[Items] /add_item <itemId> <count?> <grade?>");
+                DisplaySyntax(character);
                 return;
             }
 
-            var itemId = uint.Parse(args[0]);
+            if (!uint.TryParse(args[0], out uint itemId))
+            {
+                DisplayError(character,"You must enter a valid item id");
+                return;
+            }
+
+
             var count = 1;
             byte grade = 0;
+
             if (args.Length > 1)
-                count = int.Parse(args[1]);
+            {
+                if (!int.TryParse(args[1], out count))
+                {
+                    DisplayError(character, "You must enter a valid count");
+                    return;
+                }
+            }
             if (args.Length > 2)
-                grade = byte.Parse(args[2]);
+            {
+                if (!byte.TryParse(args[1], out grade))
+                {
+                    DisplayError(character, "You must enter a valid grade");
+                    return;
+                }
+            }
+
+
+
             var item = ItemManager.Instance.Create(itemId, count, grade, true);
             if (item == null)
             {
-                character.SendMessage("Item cannot be created");
+                DisplayError(character, "Item cannot be created");
                 return;
             }
 
             var res = character.Inventory.AddItem(item);
             if (res == null)
             {
-                ItemIdManager.Instance.ReleaseId((uint) item.Id);
+                ItemIdManager.Instance.ReleaseId((uint)item.Id);
                 return;
             }
 
@@ -50,7 +73,6 @@ namespace AAEmu.Game.Scripts.Commands
             else
                 tasks.Add(new ItemAdd(item));
             character.SendPacket(new SCItemTaskSuccessPacket(ItemTaskType.AutoLootDoodadItem, tasks, new List<ulong>()));
-
         }
     }
 }
