@@ -104,7 +104,7 @@ namespace AAEmu.Game
 
             SpawnManager.Instance.Load();
             SpawnManager.Instance.SpawnAll();
-            ScriptCompiler.Compile();
+            ScriptManager.Instance.LoadCommands();
 
             TimeManager.Instance.Start();
             TaskManager.Instance.Start();
